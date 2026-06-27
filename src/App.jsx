@@ -10,6 +10,7 @@ import ResumePreview from './pages/ResumePreview';
 import LinkedInRewriter from './pages/LinkedInRewriter';
 import CoverLetter from './pages/CoverLetter';
 import SuccessScreen from './pages/SuccessScreen';
+import EnhanceResume from './pages/EnhanceResume';
 
 export default function App() {
   return (
@@ -21,6 +22,7 @@ export default function App() {
           <Route path="/" element={<Landing />} />
           <Route path="/payment" element={<Payment />} />
           <Route path="/form" element={<IntakeForm />} />
+          <Route path="/enhance" element={<EnhanceResume />} />
           <Route path="/preview" element={<ResumePreview />} />
           <Route path="/linkedin" element={<LinkedInRewriter />} />
           <Route path="/cover-letter" element={<CoverLetter />} />

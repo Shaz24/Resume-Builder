@@ -18,6 +18,35 @@ export default function Landing() {
   const [currentText, setCurrentText] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
 
+  // Floating Banner State
+  const [showFloatBanner, setShowFloatBanner] = useState(false);
+  const [bannerDismissed, setBannerDismissed] = useState(false);
+
+  // Scroll / Timer listeners for banner
+  useEffect(() => {
+    if (bannerDismissed) return;
+
+    // Show after 10 seconds
+    const timer = setTimeout(() => {
+      setShowFloatBanner(true);
+    }, 10000);
+
+    // Show after 40% scroll
+    const handleScroll = () => {
+      const scrolled = window.scrollY;
+      const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+      if (maxScroll > 0 && (scrolled / maxScroll) > 0.4) {
+        setShowFloatBanner(true);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, [bannerDismissed]);
+
   useEffect(() => {
     let timer;
     const fullText = TYPE_STRINGS[typewriterIndex];
@@ -90,13 +119,28 @@ export default function Landing() {
                 Build an ATS-optimized, recruiter-ready resume in 5 minutes with Claude AI. Try free — no credit card or signup required.
               </p>
 
-              <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 40 }}>
-                <button onClick={handleFreeTrial} className="btn btn-primary btn-lg glow-hover btn-shimmer" style={{ padding: '16px 36px', borderRadius: 28 }}>
-                  🚀 Try for Free
-                </button>
-                <button onClick={() => document.getElementById('templates').scrollIntoView({ behavior: 'smooth' })} 
-                  className="btn btn-secondary btn-lg" style={{ padding: '16px 36px', borderRadius: 28, background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
-                  See Templates →
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 40, maxWidth: 440 }}>
+                <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+                  <button onClick={handleFreeTrial} className="btn btn-primary btn-lg glow-hover btn-shimmer" style={{ padding: '16px 36px', borderRadius: 28, flex: 1 }}>
+                    🚀 Try for Free
+                  </button>
+                  <button onClick={() => document.getElementById('templates').scrollIntoView({ behavior: 'smooth' })} 
+                    className="btn btn-secondary btn-lg" style={{ padding: '16px 36px', borderRadius: 28, background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)', flex: 1 }}>
+                    See Templates →
+                  </button>
+                </div>
+                
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, justifyContent: 'center', margin: '4px 0' }}>
+                  <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.08)' }}></div>
+                  <span style={{ fontSize: 13, color: '#64748b', fontWeight: 600 }}>or</span>
+                  <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.08)' }}></div>
+                </div>
+
+                <button onClick={() => navigate('/enhance')} className="btn btn-secondary glow-hover" style={{
+                  padding: '12px 24px', borderRadius: 24, background: 'none', border: '1px solid rgba(124, 58, 237, 0.4)',
+                  color: '#d2bbff', fontSize: 14, fontWeight: 700
+                }}>
+                  📄 Enhance My Existing Resume →
                 </button>
               </div>
 
@@ -245,6 +289,23 @@ export default function Landing() {
                 </div>
                 <h3 style={{ fontSize: 18, color: '#fff', marginBottom: 8 }}>Minimal Professional</h3>
                 <p className="body-md text-muted" style={{ fontSize: 13.5, lineHeight: 1.5 }}>Whitespace-focused design for maximum readability. Extremely high parse rate in ATS systems.</p>
+              </div>
+
+              {/* Enhance Existing Resume Promo Card */}
+              <div className="glass-card glow-hover" style={{
+                padding: 24, background: 'linear-gradient(135deg, rgba(124, 58, 237, 0.08) 0%, rgba(5, 102, 217, 0.08) 100%)',
+                border: '1px dashed rgba(124, 58, 237, 0.4)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between'
+              }}>
+                <div>
+                  <div style={{ fontSize: 40, marginBottom: 16 }}>📄</div>
+                  <h3 style={{ fontSize: 18, color: '#fff', marginBottom: 8 }}>Already Have a Resume?</h3>
+                  <p className="body-md text-muted" style={{ fontSize: 13.5, lineHeight: 1.5, marginBottom: 20 }}>
+                    Upload your existing resume and let AI rewrite it to be ATS-friendly, keyword-rich, and recruiter-ready in minutes.
+                  </p>
+                </div>
+                <button onClick={() => navigate('/enhance')} className="btn btn-primary btn-sm glow-hover" style={{ width: 'max-content' }}>
+                  Enhance My Resume →
+                </button>
               </div>
 
             </div>
@@ -487,6 +548,39 @@ export default function Landing() {
         </section>
 
       </div>
+
+      {/* Floating Bottom Banner */}
+      {showFloatBanner && !bannerDismissed && (
+        <div style={{
+          position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)',
+          width: '90%', maxWidth: 640, zIndex: 10000,
+          background: 'rgba(19, 19, 26, 0.85)', backdropFilter: 'blur(16px)',
+          border: '1px solid rgba(124, 58, 237, 0.3)', borderRadius: 16,
+          padding: '16px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          boxShadow: '0 10px 40px rgba(0, 0, 0, 0.5), 0 0 30px rgba(124, 58, 237, 0.15)',
+          animation: 'scale-up 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <span style={{ fontSize: 24 }}>📄</span>
+            <div>
+              <div style={{ fontWeight: 700, color: '#fff', fontSize: 14 }}>Already have a resume?</div>
+              <div style={{ fontSize: 12.5, color: '#94a3b8' }}>Let AI enhance it in 2 minutes to be recruiter-ready.</div>
+            </div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            <button onClick={() => navigate('/enhance')} className="btn btn-primary btn-sm glow-hover btn-shimmer" style={{
+              whiteSpace: 'nowrap', borderRadius: 20, padding: '8px 18px'
+            }}>
+              Enhance Now
+            </button>
+            <button onClick={() => { setBannerDismissed(true); setShowFloatBanner(false); }} style={{
+              background: 'none', border: 'none', color: '#64748b', fontSize: 18, cursor: 'pointer', fontWeight: 700
+            }}>
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
 
       <style>{`
         .faq-two-column {

@@ -29,6 +29,14 @@ export async function generateCoverLetter(resumeData, jobDescription, company, t
   return callDirectAI('cover-letter', { resumeData, jobDescription, company, targetRole });
 }
 
+// ─── Enhance Resume ───────────────────────────────────────────────────────────
+export async function enhanceResume(resumeText, targetRole) {
+  if (isSupabaseConfigured()) {
+    return callEdgeFunction('enhance-resume', { resumeText, targetRole });
+  }
+  return callDirectAI('enhance', { resumeText, targetRole });
+}
+
 // ─── Direct browser fallback (dev without Supabase) ──────────────────────────
 // AI keys read from .env.local — only use this for local development!
 const PROVIDER = import.meta.env.VITE_AI_PROVIDER || 'gemini';
@@ -60,6 +68,30 @@ Candidate: ${JSON.stringify(payload.formData, null, 2)}`,
 {"headline":"...","about":"...","experience":[{"role":"...","company":"...","bullets":["..."]}],"annotations":{"headline":"...","about":"...","keywords":["..."]}}
 
 Resume: ${JSON.stringify(payload.resumeData, null, 2)}`,
+    };
+  }
+  if (type === 'enhance') {
+    return {
+      system: `You are an expert resume writer and ATS optimization specialist. Enhance the user's existing resume.`,
+      user: `Enhance this resume for the role: "${payload.targetRole || 'Software Engineer'}".
+Return ONLY valid JSON:
+{
+  "original_ats_score": 45,
+  "enhanced_ats_score": 88,
+  "changes_made": ["change1"],
+  "enhanced_resume": {
+    "name": "...",
+    "contact": "...",
+    "summary": "...",
+    "skills": ["..."],
+    "experience": [{"role": "...", "company": "...", "duration": "...", "bullets": ["..."]}],
+    "projects": [{"title": "...", "tech": "...", "description": "..."}],
+    "education": {"degree": "...", "college": "...", "year": "...", "cgpa": "..."},
+    "certifications": ["..."]
+  }
+}
+
+Original Resume: ${payload.resumeText}`,
     };
   }
   // cover-letter

@@ -11,6 +11,29 @@ export default function Navbar() {
 
   const isLanding = loc.pathname === '/';
 
+  // Navigation button styles
+  const navButtonStyle = {
+    background: 'none', border: 'none', color: '#94a3b8',
+    fontSize: 14, fontWeight: 500, cursor: 'pointer',
+    textTransform: 'capitalize', transition: 'color 0.2s',
+  };
+
+  const navLinkStyle = {
+    color: '#94a3b8', fontSize: 14, fontWeight: 500,
+    textDecoration: 'none', transition: 'color 0.2s',
+  };
+
+  const mobButtonStyle = {
+    background: 'none', border: 'none', color: '#94a3b8',
+    fontSize: 16, fontWeight: 500, cursor: 'pointer', textAlign: 'left',
+    textTransform: 'capitalize', padding: '8px 0'
+  };
+
+  const mobLinkStyle = {
+    color: '#94a3b8', fontSize: 16, fontWeight: 500,
+    textDecoration: 'none', padding: '8px 0', display: 'block'
+  };
+
   // Handle scroll to add background and shrink
   useEffect(() => {
     const handleScroll = () => {
@@ -59,22 +82,12 @@ export default function Navbar() {
       </Link>
 
       {/* Center: Navigation Links */}
-      <div className="nav-links-desktop" style={{ display: 'flex', gap: 24 }}>
-        {['features', 'templates', 'pricing', 'faq'].map((section) => (
-          <button
-            key={section}
-            onClick={() => scrollToSection(section)}
-            style={{
-              background: 'none', border: 'none', color: '#94a3b8',
-              fontSize: 14, fontWeight: 500, cursor: 'pointer',
-              textTransform: 'capitalize', transition: 'color 0.2s',
-            }}
-            onMouseEnter={(e) => e.target.style.color = '#fff'}
-            onMouseLeave={(e) => e.target.style.color = '#94a3b8'}
-          >
-            {section}
-          </button>
-        ))}
+      <div className="nav-links-desktop" style={{ display: 'flex', gap: 20 }}>
+        <button onClick={() => scrollToSection('features')} style={navButtonStyle}>Features</button>
+        <Link to="/enhance" style={navLinkStyle}>Enhance Resume</Link>
+        <button onClick={() => scrollToSection('templates')} style={navButtonStyle}>Templates</button>
+        <button onClick={() => scrollToSection('pricing')} style={navButtonStyle}>Pricing</button>
+        <button onClick={() => scrollToSection('faq')} style={navButtonStyle}>FAQ</button>
       </div>
 
       {/* Right: Stat + Credits + CTA */}
@@ -122,19 +135,11 @@ export default function Navbar() {
           borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
           padding: '24px 20px', display: 'flex', flexDirection: 'column', gap: 16, zIndex: 999
         }}>
-          {['features', 'templates', 'pricing', 'faq'].map((section) => (
-            <button
-              key={section}
-              onClick={() => scrollToSection(section)}
-              style={{
-                background: 'none', border: 'none', color: '#94a3b8',
-                fontSize: 16, fontWeight: 500, cursor: 'pointer', textAlign: 'left',
-                textTransform: 'capitalize', padding: '8px 0'
-              }}
-            >
-              {section}
-            </button>
-          ))}
+          <button onClick={() => scrollToSection('features')} style={mobButtonStyle}>Features</button>
+          <Link to="/enhance" onClick={() => setMobileMenuOpen(false)} style={mobLinkStyle}>Enhance Resume</Link>
+          <button onClick={() => scrollToSection('templates')} style={mobButtonStyle}>Templates</button>
+          <button onClick={() => scrollToSection('pricing')} style={mobButtonStyle}>Pricing</button>
+          <button onClick={() => scrollToSection('faq')} style={mobButtonStyle}>FAQ</button>
           <div className="divider" />
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontSize: 13, color: '#94a3b8' }}>2,400+ built</span>
