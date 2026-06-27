@@ -16,11 +16,6 @@ export default function IntakeForm() {
   const [step, setStep] = useState(0);
   const autosaveRef = useRef(null);
 
-  // Guard: require payment
-  useEffect(() => {
-    if (!isPaid) { navigate('/payment'); }
-  }, []);
-
   // Autosave every 30s
   useEffect(() => {
     autosaveRef.current = setInterval(() => {

@@ -32,6 +32,12 @@ export default function Navbar() {
     }
   };
 
+  const handleTryFree = () => {
+    localStorage.setItem('trialMode', 'true');
+    setMobileMenuOpen(false);
+    navigate('/form');
+  };
+
   return (
     <nav className={`navbar ${scrolled ? 'navbar-scrolled' : ''}`} style={{
       position: 'fixed', top: 0, left: 0, right: 0, zIndex: 1000,
@@ -90,11 +96,11 @@ export default function Navbar() {
           </div>
         )}
 
-        <Link to="/form" className="btn btn-primary btn-shimmer glow-hover" style={{
-          padding: '8px 18px', fontSize: 13.5, borderRadius: 20, textDecoration: 'none'
+        <button onClick={handleTryFree} className="btn btn-primary btn-shimmer glow-hover" style={{
+          padding: '8px 18px', fontSize: 13.5, borderRadius: 20, cursor: 'pointer', border: 'none'
         }}>
           Try for Free →
-        </Link>
+        </button>
       </div>
 
       {/* Mobile Hamburger toggle */}
@@ -136,9 +142,9 @@ export default function Navbar() {
               <span style={{ fontSize: 13, color: '#d2bbff', fontWeight: 600 }}>⚡ {credits} credits left</span>
             )}
           </div>
-          <Link to="/form" onClick={() => setMobileMenuOpen(false)} className="btn btn-primary btn-full text-center" style={{ textDecoration: 'none' }}>
+          <button onClick={handleTryFree} className="btn btn-primary btn-full text-center" style={{ border: 'none', cursor: 'pointer' }}>
             Try for Free →
-          </Link>
+          </button>
         </div>
       )}
 

@@ -46,11 +46,13 @@ export default function Landing() {
   }, [currentText, isDeleting, typewriterIndex]);
 
   const choosePlan = (planId) => {
+    localStorage.removeItem('trialMode');
     setPlan(planId);
     navigate('/payment');
   };
 
   const handleFreeTrial = () => {
+    localStorage.setItem('trialMode', 'true');
     setPlan('free_trial'); // Trial mode
     navigate('/form');
   };

@@ -27,7 +27,7 @@ export default function ResumePreview() {
   const TemplateComponent = TemplateMap[template];
   const appUrl = import.meta.env.VITE_APP_URL || window.location.origin;
 
-  const isFree = credits <= 0;
+  const isFree = credits <= 0 || localStorage.getItem('trialMode') === 'true';
 
   if (!resumeData) {
     return (
