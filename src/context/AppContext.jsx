@@ -23,9 +23,19 @@ export function AppProvider({ children }) {
     const init = async () => {
       let currentSessionId = sessionId;
       try {
-        const refCode = storage.get(KEYS.REFERRAL_CODE) || generateReferralCode();
+        let refCode = storage.get(KEYS.REFERRAL_CODE);
+        if (!refCode) {
+          refCode = generateReferralCode();
+          storage.set(KEYS.REFERRAL_CODE, refCode);
+        }
         if (!currentSessionId) {
-          const session = await createSession(refCode);
+          let session = await createSession(refCode);
+          if (!session) {
+            // Collision or duplicate code retry
+            const freshCode = generateReferralCode();
+            storage.set(KEYS.REFERRAL_CODE, freshCode);
+            session = await createSession(freshCode);
+          }
           if (session?.id) {
             storage.set('session_id', session.id);
             setSessionId(session.id);

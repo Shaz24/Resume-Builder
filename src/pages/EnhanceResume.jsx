@@ -24,7 +24,7 @@ const CYCLING_MESSAGES = [
 
 export default function EnhanceResume() {
   const navigate = useNavigate();
-  const { sessionId, credits, deductCredit, setResumeData, setPlan, addToast } = useApp();
+  const { sessionId, credits, deductCredit, setResumeData, setPlan, formData, addToast } = useApp();
 
   const [step, setStep] = useState(1); // 1 = Upload, 2 = Processing, 3 = Output
   const [file, setFile] = useState(null);
