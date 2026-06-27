@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { storage, KEYS } from '../utils/storage';
-import { createSession, logEvent } from '../utils/db';
+import { createSession, logEvent, getSession, updateSessionCredits } from '../utils/db';
 import { generateReferralCode } from '../utils/storage';
 
 const AppContext = createContext(null);
@@ -13,6 +13,7 @@ export function AppProvider({ children }) {
   const [linkedInData, setLinkedInData] = useState(() => storage.get(KEYS.LINKEDIN_DATA));
   const [coverLetter, setCoverLetter]   = useState(() => storage.get(KEYS.COVER_LETTER));
   const [sessionId, setSessionId]       = useState(() => storage.get('session_id'));
+  const [credits, setCredits]           = useState(() => Number(storage.get('credits') || 0));
   const [toasts, setToasts]         = useState([]);
   const [isLoading, setIsLoading]   = useState(false);
   const [loadingMessage, setLoadingMessage] = useState('');
@@ -20,14 +21,29 @@ export function AppProvider({ children }) {
   // ── Initialize anonymous Supabase session ─────────────────────────────────
   useEffect(() => {
     const init = async () => {
-      if (sessionId) return; // already have a session
+      let currentSessionId = sessionId;
       try {
         const refCode = storage.get(KEYS.REFERRAL_CODE) || generateReferralCode();
-        const session = await createSession(refCode);
-        if (session?.id) {
-          storage.set('session_id', session.id);
-          setSessionId(session.id);
-          logEvent(session.id, 'session_created', { plan: null });
+        if (!currentSessionId) {
+          const session = await createSession(refCode);
+          if (session?.id) {
+            storage.set('session_id', session.id);
+            setSessionId(session.id);
+            currentSessionId = session.id;
+            logEvent(session.id, 'session_created', { plan: null });
+          }
+        }
+        
+        // If we have a session, fetch latest credits/plan from database
+        if (currentSessionId) {
+          const sessionData = await getSession(currentSessionId);
+          if (sessionData) {
+            if (sessionData.plan) setPlan(sessionData.plan);
+            if (typeof sessionData.credits === 'number') {
+              setCredits(sessionData.credits);
+              storage.set('credits', sessionData.credits);
+            }
+          }
         }
       } catch (e) {
         console.warn('Session init failed (offline mode):', e.message);
@@ -36,13 +52,29 @@ export function AppProvider({ children }) {
     init();
   }, []);
 
-  // ── Sync plan / payment to localStorage ──────────────────────────────────
+  // ── Sync states to localStorage ──────────────────────────────────────────
   useEffect(() => { storage.set(KEYS.PLAN, plan); }, [plan]);
   useEffect(() => { storage.set(KEYS.PAYMENT, payment); }, [payment]);
   useEffect(() => { storage.set(KEYS.FORM_DATA, formData); }, [formData]);
+  useEffect(() => { storage.set('credits', credits); }, [credits]);
   useEffect(() => { if (resumeData) storage.set(KEYS.RESUME_DATA, resumeData); }, [resumeData]);
   useEffect(() => { if (linkedInData) storage.set(KEYS.LINKEDIN_DATA, linkedInData); }, [linkedInData]);
   useEffect(() => { if (coverLetter) storage.set(KEYS.COVER_LETTER, coverLetter); }, [coverLetter]);
+
+  // ── Deduct credit ─────────────────────────────────────────────────────────
+  const deductCredit = async () => {
+    if (credits <= 0) return false;
+    const newCredits = credits - 1;
+    setCredits(newCredits);
+    storage.set('credits', newCredits);
+    try {
+      await updateSessionCredits(sessionId, newCredits);
+      logEvent(sessionId, 'credit_deducted', { remaining: newCredits });
+    } catch (e) {
+      console.warn('Deduct credits failed in database:', e.message);
+    }
+    return true;
+  };
 
   // ── Toast system ──────────────────────────────────────────────────────────
   const addToast = useCallback((message, type = 'info', duration = 3500) => {
@@ -61,13 +93,21 @@ export function AppProvider({ children }) {
   const hideLoading = useCallback(() => setIsLoading(false), []);
 
   // ── Plan access helpers ───────────────────────────────────────────────────
+  // starter: no LinkedIn/Cover Letter
+  // value: unlocks LinkedIn
+  // pro: unlocks LinkedIn + Cover Letter
   const hasPlan = (required) => {
     if (!plan) return false;
-    const order = ['basic', 'pro', 'premium'];
-    return order.indexOf(plan) >= order.indexOf(required);
+    if (required === 'pro') {
+      return plan === 'value' || plan === 'pro';
+    }
+    if (required === 'premium') {
+      return plan === 'pro';
+    }
+    return true; // basic features
   };
 
-  const isPaid = Boolean(payment);
+  const isPaid = Boolean(payment) || credits > 0;
 
   const value = {
     plan, setPlan,
@@ -77,6 +117,7 @@ export function AppProvider({ children }) {
     linkedInData, setLinkedInData,
     coverLetter, setCoverLetter,
     sessionId,
+    credits, setCredits, deductCredit,
     toasts, addToast, removeToast,
     isLoading, loadingMessage, showLoading, hideLoading,
     hasPlan, isPaid,

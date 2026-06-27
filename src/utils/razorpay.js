@@ -1,19 +1,19 @@
-// ─── Razorpay utilities ───────────────────────────────────────────────────────
+import { callEdgeFunction, isSupabaseConfigured } from '../lib/supabase';
 
 export const PLANS = {
-  basic: {
-    id: 'basic', name: 'Basic', price: 99, priceDisplay: '₹99',
-    features: ['ATS-Optimized Resume PDF', '3 Resume Templates', 'ATS Score Analysis', 'Instant Download'],
+  starter: {
+    id: 'starter', name: 'Starter', price: 199, priceDisplay: '₹199',
+    features: ['1 Watermark-Free Download', 'All 3 Resume Templates', 'ATS Score Analysis', 'Instant Download'],
     color: '#0566d9', emoji: '📄',
   },
-  pro: {
-    id: 'pro', name: 'Pro', price: 199, priceDisplay: '₹199',
-    features: ['Everything in Basic', 'LinkedIn Profile Rewrite', 'Before/After Comparison', 'Keyword Annotations'],
+  value: {
+    id: 'value', name: 'Value Pack', price: 599, priceDisplay: '₹599',
+    features: ['5 Watermark-Free Downloads', 'All 3 Resume Templates', 'LinkedIn Profile Rewrite', 'Keyword Annotations'],
     color: '#7c3aed', emoji: '🚀', featured: true,
   },
-  premium: {
-    id: 'premium', name: 'Premium', price: 349, priceDisplay: '₹349',
-    features: ['Everything in Pro', 'Custom Cover Letter', 'Job Description Tailoring', 'Priority Support'],
+  pro: {
+    id: 'pro', name: 'Pro Pack', price: 899, priceDisplay: '₹899',
+    features: ['10 Watermark-Free Downloads', 'LinkedIn Profile Rewrite', 'Custom Cover Letters', 'Priority Support'],
     color: '#f59e0b', emoji: '👑',
   },
 };
@@ -60,7 +60,6 @@ export async function initiatePayment(plan, sessionId, { onSuccess, onFailure })
     handler: async (response) => {
       // ── Verify signature via Edge Function (Key Secret stays server-side) ──
       try {
-        const { callEdgeFunction, isSupabaseConfigured } = await import('../lib/supabase');
         if (isSupabaseConfigured()) {
           await callEdgeFunction('verify-payment', {
             razorpay_payment_id: response.razorpay_payment_id,

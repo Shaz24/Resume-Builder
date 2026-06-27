@@ -13,7 +13,8 @@ CREATE TABLE IF NOT EXISTS sessions (
   plan            TEXT,
   referral_code   TEXT UNIQUE,
   user_agent      TEXT,
-  ref_by          TEXT  -- referral source code
+  ref_by          TEXT, -- referral source code
+  credits         INTEGER DEFAULT 0
 );
 
 -- ─── Payments ────────────────────────────────────────────────────────────────

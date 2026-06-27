@@ -35,6 +35,13 @@ export async function updateSessionPlan(sessionId, plan) {
   } catch (e) { console.warn('DB session update failed:', e.message); }
 }
 
+export async function updateSessionCredits(sessionId, credits) {
+  if (!USE_DB() || !sessionId) return;
+  try {
+    await supabase.from('sessions').update({ credits }).eq('id', sessionId);
+  } catch (e) { console.warn('DB session credits update failed:', e.message); }
+}
+
 // ─── Payments ────────────────────────────────────────────────────────────────
 export async function savePayment(sessionId, paymentData) {
   // Always save to localStorage as fallback

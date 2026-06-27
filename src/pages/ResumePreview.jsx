@@ -15,13 +15,19 @@ const TemplateMap = { Classic: ClassicTemplate, Modern: ModernTemplate, Minimal:
 
 export default function ResumePreview() {
   const navigate = useNavigate();
-  const { resumeData, setResumeData, formData, sessionId, plan, hasPlan, addToast } = useApp();
+  const { resumeData, setResumeData, formData, sessionId, credits, deductCredit, plan, hasPlan, addToast } = useApp();
   const [template, setTemplate] = useState('Classic');
   const [downloading, setDownloading] = useState(false);
   const [editable, setEditable] = useState(false);
 
+  // Watermark modal dialog state
+  const [showWatermarkModal, setShowWatermarkModal] = useState(false);
+  const [forceWatermark, setForceWatermark] = useState(false);
+
   const TemplateComponent = TemplateMap[template];
   const appUrl = import.meta.env.VITE_APP_URL || window.location.origin;
+
+  const isFree = credits <= 0;
 
   if (!resumeData) {
     return (
@@ -44,10 +50,40 @@ export default function ResumePreview() {
 
   const handleDownload = async () => {
     setDownloading(true);
+
     try {
-      await exportToPDF('resume-paper', `${resumeData.fullName || 'resume'}_resume.pdf`);
-      addToast('📥 Resume downloaded successfully!', 'success');
-      setTimeout(() => navigate('/success'), 1000);
+      if (isFree && !forceWatermark) {
+        // ── 1. Free Trial Download (With Watermark) ──
+        setForceWatermark(true);
+        // Small delay to ensure state update renders watermark class before PDF capture
+        await new Promise(r => setTimeout(r, 200));
+
+        await exportToPDF('resume-paper', `${resumeData.fullName || 'resume'}_watermarked.pdf`);
+        addToast('📥 Free watermarked resume downloaded!', 'success');
+        setShowWatermarkModal(true);
+        setForceWatermark(false);
+      } else {
+        // ── 2. Clean Download (Deducting 1 Credit) ──
+        const confirmDownload = window.confirm(`Use 1 credit to download a clean, watermark-free PDF? (You have ${credits} remaining)`);
+        if (!confirmDownload) {
+          setDownloading(false);
+          return;
+        }
+
+        const success = await deductCredit();
+        if (success) {
+          // Disable watermark overlay during capture
+          setForceWatermark(false);
+          await new Promise(r => setTimeout(r, 200));
+
+          await exportToPDF('resume-paper', `${resumeData.fullName || 'resume'}_resume.pdf`);
+          addToast('📥 Clean PDF downloaded successfully!', 'success');
+          setTimeout(() => navigate('/success'), 1000);
+        } else {
+          addToast('Out of credits! Please upgrade to download.', 'error');
+          navigate('/payment');
+        }
+      }
     } catch (e) {
       addToast('Download failed. Please try again.', 'error');
     } finally {
@@ -75,7 +111,9 @@ export default function ResumePreview() {
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, marginBottom: 24 }}>
             <div>
               <h1 className="headline-lg" style={{ marginBottom: 4 }}>Your Resume is Ready! 🎉</h1>
-              <p className="body-md text-muted">Switch templates, edit inline, then download.</p>
+              <p className="body-md text-muted">
+                {isFree ? 'Free trial preview mode. Watermark will be added on download.' : `Premium mode. ${credits} downloads remaining.`}
+              </p>
             </div>
             <ATSBadge resumeData={resumeData} />
           </div>
@@ -100,17 +138,30 @@ export default function ResumePreview() {
             </button>
           </div>
 
-          {/* Resume Preview */}
-          <div className="resume-preview-wrap" style={{ marginBottom: 24 }}>
-            <div id="resume-paper">
+          {/* Resume Preview Wrap */}
+          <div className="resume-preview-wrap watermark-container" style={{ marginBottom: 24, position: 'relative' }}>
+            {/* Watermark Overlay (Only rendered if user is free or during free trial print) */}
+            {(isFree || forceWatermark) && (
+              <div className="watermark-overlay">
+                {Array.from({ length: 16 }).map((_, idx) => (
+                  <span key={idx} className="watermark-text">ResumeAI — Upgrade to Remove Watermark</span>
+                ))}
+              </div>
+            )}
+            
+            <div id="resume-paper" className="resume-paper">
               <TemplateComponent data={resumeData} editable={editable} onEdit={handleEdit} />
             </div>
           </div>
 
           {/* Action Buttons */}
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 24 }}>
-            <button className="btn btn-primary btn-lg" onClick={handleDownload} disabled={downloading} style={{ flex: 1, minWidth: 200 }}>
-              {downloading ? <><div className="spinner" style={{ width: 20, height: 20 }}></div> Downloading...</> : '⬇️ Download PDF'}
+            <button className="btn btn-primary btn-lg glow-hover btn-shimmer" onClick={handleDownload} disabled={downloading} style={{ flex: 1, minWidth: 200 }}>
+              {downloading ? (
+                <><div className="spinner" style={{ width: 20, height: 20 }}></div> Exporting...</>
+              ) : (
+                isFree ? '⬇️ Download Watermarked PDF (Free)' : '⬇️ Download Clean PDF (1 Credit)'
+              )}
             </button>
             <button className="btn btn-ghost" onClick={handleWhatsApp} title="Share on WhatsApp">
               📲 Share on WhatsApp
@@ -120,14 +171,14 @@ export default function ResumePreview() {
             </button>
           </div>
 
-          {/* Next Steps / Upsell */}
+          {/* Next Steps / Upsell Banner */}
           {hasPlan('pro') ? (
             <div className="glass-card" style={{ border: '1px solid rgba(78,222,163,0.3)', background: 'rgba(78,222,163,0.06)' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
                 <div>
                   <div style={{ fontWeight: 700, marginBottom: 4 }}>🚀 Next: LinkedIn Profile Rewrite</div>
                   <div style={{ fontSize: 14, color: 'var(--color-on-surface-variant)' }}>
-                    {hasPlan('premium') ? 'Pro + Premium: LinkedIn & Cover Letter unlocked' : 'Pro plan: LinkedIn rewrite included'}
+                    {hasPlan('premium') ? 'Value + Pro: LinkedIn & Cover Letter unlocked' : 'Value Pack: LinkedIn rewrite included'}
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: 10 }}>
@@ -145,9 +196,9 @@ export default function ResumePreview() {
           ) : (
             <div className="upsell-banner">
               <div>
-                <div style={{ fontWeight: 700, marginBottom: 4 }}>🚀 Unlock LinkedIn Rewrite + Cover Letter</div>
+                <div style={{ fontWeight: 700, marginBottom: 4 }}>🚀 Unlock Clean Downloads + LinkedIn Rewrite</div>
                 <div style={{ fontSize: 14, color: 'var(--color-on-surface-variant)' }}>
-                  Upgrade to Pro (₹199) or Premium (₹349) to maximize your chances.
+                  Upgrade to Starter (₹199), Value Pack (₹599), or Pro Pack (₹899) to remove watermarks.
                 </div>
               </div>
               <button className="btn btn-primary" onClick={() => navigate('/payment')}>
@@ -157,6 +208,27 @@ export default function ResumePreview() {
           )}
         </div>
       </div>
+
+      {/* ── WATERMARK POST-DOWNLOAD MODAL DIALOG ── */}
+      {showWatermarkModal && (
+        <div className="watermark-dialog">
+          <div className="watermark-dialog-card">
+            <div style={{ fontSize: 48, marginBottom: 16 }}>🎉</div>
+            <h3 style={{ fontSize: 20, color: '#fff', marginBottom: 12 }}>Your resume is ready!</h3>
+            <p style={{ fontSize: 14, color: '#94a3b8', lineHeight: 1.6, marginBottom: 24 }}>
+              This free version has a diagonal watermark. Upgrade to Starter or Value Pack to download a clean, professional PDF recruiters will love.
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <button className="btn btn-primary glow-hover btn-shimmer" onClick={() => navigate('/payment')} style={{ padding: '12px 24px' }}>
+                Remove Watermark — ₹199
+              </button>
+              <button className="btn btn-ghost" onClick={() => setShowWatermarkModal(false)} style={{ color: '#64748b', fontSize: 13.5 }}>
+                Keep free version
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

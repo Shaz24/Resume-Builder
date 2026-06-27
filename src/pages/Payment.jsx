@@ -3,15 +3,15 @@ import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import { useApp } from '../context/AppContext';
 import { PLANS, initiatePayment } from '../utils/razorpay';
-import { savePayment } from '../utils/db';
-import { logEvent } from '../utils/db';
+import { savePayment, logEvent } from '../utils/db';
 
 export default function Payment() {
   const navigate = useNavigate();
-  const { plan, setPlan, setPayment, sessionId, addToast, showLoading, hideLoading } = useApp();
+  const { plan, setPlan, setPayment, setCredits, sessionId, addToast, showLoading, hideLoading } = useApp();
   const [paying, setPaying] = useState(false);
 
-  const selectedPlan = PLANS[plan] || PLANS.pro;
+  // Fallback to value plan if no valid plan in context
+  const selectedPlan = PLANS[plan] || PLANS.value || PLANS.pro;
 
   const handlePayment = async () => {
     setPaying(true);
@@ -31,6 +31,14 @@ export default function Payment() {
           };
           setPayment(paymentRecord);
           setPlan(selectedPlan.id);
+
+          // Add credits locally (database verifier will handle this on the backend)
+          let addedCredits = 0;
+          if (selectedPlan.id === 'starter') addedCredits = 1;
+          else if (selectedPlan.id === 'value') addedCredits = 5;
+          else if (selectedPlan.id === 'pro') addedCredits = 10;
+          setCredits(prev => prev + addedCredits);
+
           // Save to Supabase + localStorage
           await savePayment(sessionId, paymentRecord);
           logEvent(sessionId, 'payment_success', { plan: selectedPlan.id, amount: selectedPlan.price });
@@ -52,9 +60,9 @@ export default function Payment() {
   };
 
   return (
-    <div>
+    <div style={{ background: '#0A0A0F', color: '#e5e2e1', minHeight: '100vh' }}>
       <Navbar />
-      <div className="page-content" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px 20px' }}>
+      <div className="page-content" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '120px 20px 80px' }}>
         <div style={{ maxWidth: 480, width: '100%' }}>
 
           {/* Back */}
@@ -63,29 +71,32 @@ export default function Payment() {
           </button>
 
           {/* Plan Summary Card */}
-          <div className="glass-card" style={{ marginBottom: 20, border: '1px solid rgba(124,58,237,0.4)', position: 'relative', overflow: 'hidden' }}>
+          <div className="glass-card" style={{
+            marginBottom: 20, border: '1px solid rgba(124,58,237,0.4)', position: 'relative', overflow: 'hidden',
+            background: 'rgba(19, 19, 26, 0.8)', boxShadow: '0 10px 40px rgba(124, 58, 237, 0.15)'
+          }}>
             <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at top left, rgba(124,58,237,0.1), transparent)', pointerEvents: 'none' }} />
-            <div style={{ position: 'relative' }}>
+            <div style={{ position: 'relative', padding: 28 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
                 <div style={{ fontSize: 40 }}>{selectedPlan.emoji}</div>
                 <div>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--color-on-surface-variant)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Selected Plan</div>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Selected Plan</div>
                   <div style={{ fontSize: 22, fontWeight: 800, color: '#fff' }}>{selectedPlan.name}</div>
                 </div>
-                {selectedPlan.featured && <span className="badge badge-primary" style={{ marginLeft: 'auto' }}>Most Popular</span>}
+                {selectedPlan.featured && <span className="badge badge-primary" style={{ marginLeft: 'auto', background: '#7c3aed', color: '#fff' }}>Popular</span>}
               </div>
 
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, marginBottom: 20 }}>
                 <span style={{ fontSize: 48, fontWeight: 800, color: '#fff' }}>₹{selectedPlan.price}</span>
-                <span style={{ color: 'var(--color-on-surface-variant)', fontSize: 14 }}>one-time payment</span>
+                <span style={{ color: '#94a3b8', fontSize: 14 }}>one-time payment</span>
               </div>
 
-              <div className="divider" />
+              <div className="divider" style={{ margin: '0 0 20px' }} />
 
               <ul style={{ listStyle: 'none', padding: 0 }}>
                 {selectedPlan.features.map((f, i) => (
-                  <li key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', fontSize: 14, color: 'var(--color-on-surface-variant)' }}>
-                    <span style={{ color: 'var(--color-tertiary)' }}>✓</span>{f}
+                  <li key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', fontSize: 14, color: '#94a3b8' }}>
+                    <span style={{ color: '#4edea3' }}>✓</span>{f}
                   </li>
                 ))}
               </ul>
@@ -93,14 +104,14 @@ export default function Payment() {
           </div>
 
           {/* Switch Plan */}
-          <div style={{ marginBottom: 16 }}>
-            <div className="label-sm text-muted" style={{ marginBottom: 8 }}>Switch plan:</div>
+          <div style={{ marginBottom: 24 }}>
+            <div className="label-sm text-muted" style={{ marginBottom: 8, color: '#94a3b8' }}>Switch plan:</div>
             <div style={{ display: 'flex', gap: 8 }}>
               {Object.values(PLANS).map(p => (
                 <button key={p.id}
-                  className={`btn btn-sm ${plan === p.id ? 'btn-primary' : 'btn-ghost'}`}
+                  className={`btn btn-sm ${selectedPlan.id === p.id ? 'btn-primary' : 'btn-ghost'}`}
                   onClick={() => setPlan(p.id)}
-                  style={{ flex: 1, padding: '10px 8px' }}>
+                  style={{ flex: 1, padding: '10px 8px', borderRadius: 20 }}>
                   {p.emoji} {p.name}
                 </button>
               ))}
@@ -109,10 +120,10 @@ export default function Payment() {
 
           {/* Pay Button */}
           <button
-            className="btn btn-primary btn-full btn-lg"
+            className="btn btn-primary btn-full btn-lg glow-hover btn-shimmer"
             onClick={handlePayment}
             disabled={paying}
-            style={{ marginBottom: 16 }}>
+            style={{ marginBottom: 16, padding: '14px 20px', borderRadius: 24 }}>
             {paying ? (
               <><div className="spinner" style={{ width: 20, height: 20 }}></div> Processing...</>
             ) : (
@@ -123,11 +134,11 @@ export default function Payment() {
           {/* Trust */}
           <div style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap' }}>
             {['🔒 Razorpay Secured', '📱 UPI / Cards / Net Banking', '🚫 No Refunds*'].map((t, i) => (
-              <span key={i} style={{ fontSize: 12, color: 'var(--color-on-surface-variant)' }}>{t}</span>
+              <span key={i} style={{ fontSize: 12, color: '#64748b' }}>{t}</span>
             ))}
           </div>
-          <p style={{ textAlign: 'center', fontSize: 11, color: 'var(--color-outline)', marginTop: 8 }}>
-            *As the service is digital and AI-generated content is delivered instantly.
+          <p style={{ textAlign: 'center', fontSize: 11, color: '#475569', marginTop: 12, lineHeight: 1.4 }}>
+            *As service delivery is instant and includes premium AI tokens.
           </p>
         </div>
       </div>

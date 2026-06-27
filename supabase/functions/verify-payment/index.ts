@@ -67,9 +67,28 @@ serve(async (req) => {
 
     if (error) throw error;
 
-    // Update session plan
+    // Update session plan & credits
     if (sessionId) {
-      await supabase.from('sessions').update({ plan }).eq('id', sessionId);
+      // Get current credits
+      const { data: sessionData } = await supabase
+        .from('sessions')
+        .select('credits')
+        .eq('id', sessionId)
+        .single();
+      
+      const currentCredits = sessionData?.credits || 0;
+      let addedCredits = 0;
+      if (plan === 'starter') addedCredits = 1;
+      else if (plan === 'value') addedCredits = 5;
+      else if (plan === 'pro') addedCredits = 10;
+
+      await supabase
+        .from('sessions')
+        .update({ 
+          plan,
+          credits: currentCredits + addedCredits
+        })
+        .eq('id', sessionId);
     }
 
     return new Response(JSON.stringify({ data: { payment, verified: true } }), {
